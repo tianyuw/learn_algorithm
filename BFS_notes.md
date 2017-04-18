@@ -1,0 +1,496 @@
+# BFS (Breadth-first search)
+##BSF in Tree
+在binary tree中BFS通常是用queue来实现的，这是一种很简单明了的方法
+比如我们有一个binary tree:
+```
+    3
+   / \
+  9  20
+    /  \
+   15   7
+```
+-  如果用<font color='red'>BFS</font>的方法遍历它的话：
+```c++
+#include <iostream>
+#include <queue>
+
+using namespace std;
+struct Node{
+	int data;
+	Node * left;
+	Node * right;
+};
+
+void LevelOrder(Node * root)
+{
+	if(root == NULL) return;
+	queue<Node*> Q;
+	Q.push(root); // push first node into queue
+	// using iteration for traversal
+	while(! Q.empty())
+	{
+		// get number of nodes on each level
+		int nodes_each_level = Q.size();
+		Node * temp;
+		for(int i = 0; i < nodes_each_level; i++)
+		{
+			temp = Q.front();
+			print('...');
+			// push childs of temp into queue (if not NULL)
+			if(temp -> left != NULL) Q.push(temp->left);
+			if(temp -> right != NULL) Q.push(temp -> right);
+			// remove the element already processed
+			Q,pop();
+		}
+	}
+}
+```
+- 用<font color = 'red'>DFS</font>也可以实现对它的level order traversal.
+  我们可以用一个变量level去keep track of现在访问的层数，每访问到一个新的层，就创建一个空的vector<int>去记录这个层里的内容．
+  比如Leet Code中的：
+  102: Binary Tree Level Order Traversal
+  107: Binary Tree Level Order Traversal 2
+  这两道题实质上是同一道题，都需要对Binary Tree中每层内容的访问，把每层的内容存到一个vector<vector<int>>　中：
+``` c++
+Given a binary tree, return the bottom-up level order traversal of its nodes values. (ie, from left to right, level by level from leaf to root).
+
+For example:
+Given binary tree [3,9,20,null,null,15,7],
+    3
+   / \
+  9  20
+    /  \
+   15   7
+return its bottom-up level order traversal as:
+[
+  [15,7],
+  [9,20],
+  [3]
+]
+
+这道题的一种解法就是用DFS去解决BFS的问题：
+class Solution {
+public:
+    void dfs(TreeNode * root, vector<vector<int>> & result, int level)
+    {
+        if (root == NULL)
+            return;
+        // if this level has not saved in final result
+        if(level == result.size())
+        {
+            result.push_back(vector<int>(0)); // create a new level   
+        }
+        // if level is already created, just insert
+        result[level].push_back(root->val);
+        // recursive call its childs
+        dfs(root -> left, result, level + 1);
+        dfs(root -> right, result, level + 1);
+    }
+
+    vector<vector<int>> levelOrderBottom(TreeNode* root) {
+        vector<vector<int>> res; // used to save results of each layers
+        dfs(root, res, 0); // last argument is level information
+        // return the reversed order of result
+        return vector<vector<int>> (res.rbegin(), res.rend());    
+    }
+};
+
+
+同样可以用BFS的方法去解：
+class Solution {
+public:
+    vector<vector<int>> levelOrderBottom(TreeNode* root) {
+        vector<vector<int>> result;
+        queue<TreeNode*> Q;
+        if(root == NULL)
+            return result;
+        Q.push(root);
+        vector<int> temp;
+        while(!Q.empty())
+        {
+            temp.clear();
+            int level_size = Q.size();
+            for(int i = 0; i < level_size; i++)
+            {
+                TreeNode* node_ptr = Q.front();
+                temp.push_back(node_ptr -> val);
+                if(node_ptr->left != NULL) Q.push(node_ptr -> left);
+                if(node_ptr->right != NULL) Q.push(node_ptr -> right);
+                Q.pop();
+            }
+            result.push_back(temp);
+        }
+        reverse(result.begin(), result.end());
+        return result;
+    }
+};
+
+＿＿要注意reverse函数是在原vector的基础上做reverse的＿＿
+千万注意不要写成：
+return reverse(result.begin(), result.end());
+
+
+
+```
+
+
+
+
+##BFS in graph
+Applicateions of BFS:
+- web crawling
+- social network
+- network broadcasting
+- garbage collection
+- model checking
+- solving puzzles & games
+
+__<font color = 'red'>Graph Representation:</font>__
+Adjacency List: It is an array of v linked lists, for each vertex u(u from v). Adj[u] stores its neighbors(can be reach by one move/connected).
+The space cost by Adjacency list is O(V+E). where V is number of vertices and E is number of edges
+__<font color = 'red'> Breadth First Search:</font>__
+Goal is to visit all the nodes reachable from given node s.
+- First look at nodes reachable in 0 moves - > s, 1 moves -> adj[s], 2 moves, 3 moves.....
+- Careful to avoid duplicates because this will result in infinite loop
+``` c++
+// version 1 of BFS
+BFS(s, Adj)
+{
+	level = {s: 0} // set level of s to be zero
+	parent = {s: None}
+	i = 1 // we just finished level zero, so set i to 1
+	frontier = [s] // level i-1, what we can reach in i-1 moves
+	while (frontier) // we exit loop when every nodes has been visited
+		next = [] // level i, what we can reach in i moves
+		for(u in frontier)
+			for(v in Adj[u])
+				f v not in  level // here we check for duplicates
+					level[v] = i
+					parent[v] = u
+					next.append(v) // add v to next layer
+		frontier = next
+		i+=1
+}
+
+In the example above, parent is a dictionary, that points each node to its parent node.
+If we start from a random node, and move along the path parent gives us, we always ends with the root of the graph.
+
+This is also the shortest path:
+<font color = 'red'>If we start from a random node in graph, and move along the path that parent gives us, that path is actually the shortest path from root to that random node. </font>
+```  
+
+
+## Leet code
+### 542. 01 Matrix
+
+Given a matrix consists of 0 and 1, find the distance of the nearest 0 for each cell.
+
+The distance between two adjacent cells is 1.
+Example 1:
+Input:
+
+0 0 0
+0 1 0
+0 0 0
+Output:
+0 0 0
+0 1 0
+0 0 0
+Example 2:
+Input:
+
+0 0 0
+0 1 0
+1 1 1
+Output:
+0 0 0
+0 1 0
+1 2 1
+Note:
+
+1. The number of elements of the given matrix will not exceed 10,000.
+2. There are at least one 0 in the given matrix.
+3. The cells are adjacent in only four directions: up, down, left and right.
+
+这道题是让在一个矩阵中求距离场的问题，找距离场的问题BFS是个好方法，因为它的每一次循环都会求得距离为 i 的所有位置，再一次循环就会求得距离为i + 1的所有位置．这道题要求所有非零的location　距０的距离．很容易想到从每个非零的地方出发，用BFS的方式在其周围搜索最近的０的距离．这样的方法会要遍历每个非零的点，会TLE．或者想一下另一个思路，从０的位置出发去搜索非零的点．先从所有的零出发去搜索距离为１的点，然后从距离为１的点出发去搜索距离为２的点．以此类推．
+```c++
+class Solution {
+public:
+    // BFS + queue (start from zeros)
+    vector<vector<int>> updateMatrix(vector<vector<int>>& matrix) {
+        // corner cases
+        if(matrix.empty() || matrix[0].empty())
+            return matrix;
+        vector<vector<int>> res = matrix;
+        // make a queue that saves coordinate pairs
+        queue<pair<int, int>> Q;
+        // start from all zeros, we are searching for non-zeros
+        for(int i = 0; i < res.size(); i++)
+        {
+            for(int j = 0; j < res[0].size(); j++)
+            {
+                if(res[i][j] != 0)
+                    res[i][j] = -1; // set unexplored elements to -1 to avoid duplicates
+                else
+                    Q.push(make_pair(i, j)); // save all zero locations, as the level 0
+            }
+        }
+
+        // pair<> initialing using curly braces { };
+        vector<pair<int, int>> steps = {{-1, 0}, {0, -1}, {1, 0}, {0, 1}};
+        //start BFS
+        while(Q.size())
+        {
+            int x_pre = Q.front().first, y_pre = Q.front().second;
+            int x_new, y_new;
+            Q.pop();
+            for(auto step : steps)
+            {
+                x_new = x_pre + step.first;
+                y_new = y_pre + step.second;
+                // determine whether this location out of boundary or visited
+                if(x_new >= 0 && y_new >= 0 && x_new < matrix.size() && y_new < matrix[0].size() && res[x_new][y_new] == -1)
+                {
+                    res[x_new][y_new] = res[x_pre][y_pre] + 1;   
+                    Q.push(make_pair(x_new, y_new));
+                }
+            }
+        }
+        return res;
+    }
+};
+```
+
+
+
+## 101. Symmetric Tree  
+``` c++
+Given a binary tree, check whether it is a mirror of itself (ie, symmetric around its center).
+
+For example, this binary tree [1,2,2,3,4,4,3] is symmetric:
+
+    1
+   / \
+  2   2
+ / \ / \
+3  4 4  3
+But the following [1,2,2,null,3,null,3] is not:
+    1
+   / \
+  2   2
+   \   \
+   3    3
+
+这道题要判断Tree是否为对称的，如果能证明树的每一层都是对称的话整个tree就是对称的。可以对树的left-subtree和right-subtree分别做level order traversal, 如果每个元素都能对称，说明left-subtree和right-subtree对称。
+这样就能说明原来的tree是symmetric的。但是正如题目中的第二个例子所示，tree中可能每一层的东西确实是相同的，但是由于位置的关系导致左右子tree不对称。要解决这种情况，每次我们比较left-subtree和right-subtree的同一level时，需要把NULL也加入比较。
+对于left-subtree 和 right-subtree每个元素进行比较时，left-subtree中应该以left to right的方式push 进 queue。 而right-subtree 应该以 right to left 的方式push 进 queue。
+
+class Solution {
+public:
+    bool isSymmetric(TreeNode* root) {
+      // corner case
+      if(root == NULL)
+        return false;
+      queue<TreeNode*> left_subtree, right_subtree;
+      // add initial value to 2 queues
+      left_subtree.push(root -> left); // this include NULL
+      right_subtree.push(root -> right);
+      TreeNode * left, * right; // define two pointer type, second variable need * !!
+      while(!left_subtree.empty() && !right_subtree.empty())
+      {
+          left = left_subtree.front();
+          left_subtree.pop();
+          right = right_subtree.front();
+          right_subtree.pop();
+          if(left == NULL && right == NULL)
+            continue;
+          else if(left == NULL || right == NULL)
+            return false;
+          else if(left -> val != right -> val)
+            return false;
+          left_subtree.push(left -> left); // left subtree push from left to right
+          left_subtree.push(left -> right);
+          right_subtree.push(right -> right); // right subtree push from right to left
+          right_subtree.push(right -> left);
+      }
+      if(left_subtree.empty() && right_subtree.empty())
+        return true;
+      else
+        return false;
+    }
+};
+
+
+
+
+```
+
+## 130. Surrounded Regions
+```c++
+Given a 2D board containing 'X' and 'O' (the letter O), capture all regions surrounded by 'X'.
+
+A region is captured by flipping all 'O's into 'X's in that surrounded region.
+
+For example,
+X X X X
+X O O X
+X X O X
+X O X X
+After running your function, the board should be:
+
+X X X X
+X X X X
+X X X X
+X O X X
+
+解法1： 这道题如果理清思路的话写起来不是很难，我们要把所有被X包围的O置为X。我们可以从边界上的O出发去BFS寻找不被X包围的O，这样思考的话简单一些。
+所以我们从四个边的O出发去找所有不被X包围的O，把他们置为‘1’来标记他们的位置，然后遍历matrix一遍，把所有的1置为O，所有的O置为X即可。
+
+class Solution {
+public:
+    // search for neighboring zeros from border zeros
+    void BFS_zeros(vector<vector<char>> & board, pair<int, int> point)
+    {
+        vector<pair<int, int>> steps = {{-1, 0}, {0, -1}, {1, 0}, {0, 1}};
+        queue<pair<int, int>> Q;
+        board[point.first][point.second] = '1';
+        Q.push(point);
+        int row_pre, col_pre, row_new, col_new;
+        int rows = board.size();
+        int cols = board[0].size();
+        while(!Q.empty())
+        {
+            row_pre = Q.front().first;
+            col_pre = Q.front().second;
+            Q.pop();
+            for(auto step : steps)
+            {
+                row_new = row_pre + step.first;
+                col_new = col_pre + step.second;
+                if(row_new >= 0 && col_new >= 0 && row_new < rows && col_new < cols && board[row_new][col_new] == 'O')
+                {
+                    board[row_new][col_new] = '1';
+                    Q.push(make_pair(row_new, col_new));
+                }
+            }
+        }
+    }
+    void solve(vector<vector<char>>& board) {
+        // corner cases
+        if(board.empty() || board[0].empty())
+            return;
+        int rows = board.size();
+        int cols = board[0].size();
+        // find all zeros that connected to border
+        for(int i = 0; i < rows; i++) // traverse first and last cols
+        {
+            if(board[i][0] == 'O')
+                BFS_zeros(board, make_pair(i, 0));
+            if(board[i][cols-1] == 'O')
+                BFS_zeros(board, make_pair(i, cols-1));
+        }
+        
+        for(int i = 0; i < cols; i++) // traverse first and last rows
+        {
+            if(board[0][i] == 'O')
+                BFS_zeros(board, make_pair(0, i));
+            if(board[rows-1][i] == 'O')
+                BFS_zeros(board, make_pair(rows-1, i));
+        }
+        
+        for(int i = 0; i < rows; i++)
+        {
+            for(int j = 0; j < cols; j++)
+            {
+                if(board[i][j] == 'O')
+                    board[i][j] = 'X';
+                else if(board[i][j] == '1')
+                    board[i][j] = 'O';
+            }
+        }
+    }
+};
+
+上面的解法中注意如何遍历矩阵的四条边。还有就是巩固一下BFS的写法
+```
+
+## 301. Remove Invalid Parentheses
+```c++
+Remove the minimum number of invalid parentheses in order to make the input string valid. Return all possible results.
+
+Note: The input string may contain letters other than the parentheses ( and ).
+
+Examples:
+"()())()" -> ["()()()", "(())()"]
+"(a)())()" -> ["(a)()()", "(a())()"]
+")(" -> [""]
+
+
+这道题让我们移除最少的括号使得给定字符串为一个合法的含有括号的字符串，我们从小数学里就有括号，所以应该对合法的含有括号的字符串并不陌生，字符串中的左右括号数应该相同，而且每个右括号左边一定有其对应的左括号，而且题目中给的例子也说明了去除方法不唯一，我们需要找出所有合法的取法。参考了网上大神的解法，这道题首先可以用BFS来解，我们先把给定字符串排入队中，然后取出检测其是否合法，若合法直接返回，不合法的话，我们对其进行遍历，对于遇到的左右括号的字符，我们去掉括号字符生成一个新的字符串，如果这个字符串之前没有遇到过，将其排入队中，我们用哈希表记录一个字符串是否出现过。我们对队列中的每个元素都进行相同的操作，直到队列为空还没找到合法的字符串的话，那就返回空集，参见代码如下
+
+上面这段话引用自别人的blog，说的很清楚。下面自己写BFS的代码实现以下：
+顺便巩固以下map的用法。
+注意如何判断一个字符串中的parentheses合不合法，专门写个函数来判断括号的合法性。（很重要）
+use unordered_set for fast find operation.
+创建一个新的vector可以用vector<string> (old.begin(), old.begin() + xx)
+这种方法创建的vector可以直接return
+
+class Solution {
+public:
+    vector<string> removeInvalidParentheses(string s) {
+       unordered_set<string> visited;
+       queue<string> Q;
+       Q.push(s);
+       vector<string> result;
+       visited.insert(s);
+       while(!Q.empty())
+       {
+       		string queue_str = Q.front();
+            Q.pop();
+       		if(isValid(queue_str))
+            	result.push_back(queue_str);
+            else
+            {
+            	// is not valid, traverse all possible removal
+                for(int i = 0; i < queue_str.size(); i++)
+                {
+                	if(queue_str[i] != '(' && queue_str[i] != ')')
+                    	continue;
+                	string temp = queue_str;
+                	temp.erase(temp.begin() + i);
+                    // not visited
+                    if(visited.find(temp) == visited.end())
+                   	{
+                    	visited.insert(temp);
+                        Q.push(temp);
+                    }
+                }
+            }
+       }
+       if(result.size() > 1)
+       {
+       		for(int i = 1; i < result.size(); i++)
+            {
+            	if(result[i].size() != result[i - 1].size())
+            	    // return 到第i位，说明只return到i-1
+                	return vector<string>(result.begin(), result.begin() + i);
+            }
+       }
+       else return result;
+    }
+    bool isValid(string s)
+    {
+    	int cnt = 0;
+        for(int i = 0; i < s.size(); i++)
+        {
+        	if(s[i] == '(')
+            	cnt++;
+            else if(s[i] == ')' && cnt-- == 0) return false;
+        }
+    	return cnt == 0;
+    }
+};
+```
+
+
+
