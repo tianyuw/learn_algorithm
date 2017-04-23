@@ -1,0 +1,378 @@
+# Depth First Search
+
+Breadth first search traverse the graph layer by layer, the benefit is that it gives up the shortest path to each vertex.
+
+Depth first search is good at telling us the reachability of certain vertex, whether we  can reach certain vertex from the root or not.
+
+__<font color='red'>DFS is like solving a maze, try all possible path with recursion.__
+__Recursively explore graph, backtracking as necessary.__</font>
+
+algorithm:
+```c++
+parent = {s: None}
+DFS_visit(V, adj, s):
+	for v in adj[s]:
+    	if v not in parent:
+        	parent[v] = s
+            DFS_visit(V, adj, v)
+
+This program will traverse all reachable vertices from s. Maybe will not visit the whole graph.
+```
+
+```c++
+DFS(V, adj):
+	parent = {}
+    for s in V:
+    	if s not in parent:
+        	parent[s] = None
+            DFS_visit(V, adj, s)
+
+This will garentee traverse all vertices in graph, try all possible entries.
+```
+
+## Leet Code Problems
+
+### 98. Validate Binary Search Tree
+
+``` c++
+Given a binary tree, determine if it is a valid binary search tree (BST).
+
+Assume a BST is defined as follows:
+
+The left subtree of a node contains only nodes with keys less than the node's key.
+The right subtree of a node contains only nodes with keys greater than the node's key.
+Both the left and right subtrees must also be binary search trees.
+Example 1:
+    2
+   / \
+  1   3
+Binary tree [2,1,3], return true.
+Example 2:
+    1
+   / \
+  2   3
+Binary tree [1,2,3], return false.
+
+
+class Solution {
+public:
+bool isSubtreeGreater(TreeNode * root, int value)
+{
+	if(root == NULL)
+    	return true;
+    if(root -> val <= value)
+    	return false;
+    return isSubtreeGreater(root -> left, value) &&
+    	   isSubtreeGreater(root -> right, value);
+}
+bool isSubtreeLesser(TreeNode * root, int value)
+{
+	if(root == NULL)
+    	return true;
+    if(root -> val >= value)
+    	return false;
+    return isSubtreeLesser(root -> left, value) &&
+    	   isSubtreeLesser(root -> right, value);
+}
+bool isValidBST(TreeNode* root) {
+	if (root == NULL)
+    	return true;
+    if(!isSubtreeGreater(root -> right, root -> val) || 
+       !isSubtreeLesser(root -> left, root -> val))
+       return false;
+    return isValidBST(root -> left) && isValidBST(root -> right);
+}
+```
+
+### 106. Construct Binary Tree from Inorder and Postorder Traversal
+
+```c++
+Given inorder and postorder traversal of a tree, construct the binary tree.
+
+Note:
+You may assume that duplicates do not exist in the tree.
+
+这道题要求用inorder 和　postorder　traversal 来构建tree.
+举一个例子：
+		１０
+       ／　　＼
+	５　　　　　１５
+   ／　＼　　　／
+  ２　　７　　１２
+inorder: 2, 5, 7, 10, 12, 15
+postorder: 2, 7, 5, 12, 15, 10
+观察可知postorder的最后一个数10就是tree的root，然后在inorder中找10,10之前的数就是left subtree, 之后的数就是right subtree.通过这样的关系，利用递归就可以构建出整个tree
+
+/**
+ * Definition for a binary tree node.
+ * struct TreeNode {
+ *     int val;
+ *     TreeNode *left;
+ *     TreeNode *right;
+ *     TreeNode(int x) : val(x), left(NULL), right(NULL) {}
+ * };
+ */
+class Solution {
+public:
+    TreeNode* buildTree(vector<int>& inorder, vector<int>& postorder) {
+    	TreeNode* head;
+        if(inorder.empty() || postorder.empty())
+        	return head;
+        helper(head, inorder, postorder);
+        return head;
+    }
+    void helper(TreeNode * root, vector<int> inorder, vector<int> postorder)
+    {
+    	if(inorder.empty() || postorder.empty())
+        	return;
+        int root_value = postorder.back();
+    	root = new TreeNode(root_value);
+        // determine inorder and postorder for subtree
+        // binary search for 'root_value'
+        int left = 0, right = inorder.size() - 1, mid = -1;
+        for(left > right)
+        {
+        	mid = left + (right - left) / 2;
+            if(inorder[mid] == root_value)
+            	break;
+            else if(inorder[mid] < root_value)
+				left = mid + 1;
+            else
+            	right = mid - 1;
+        }
+    	// build left subtree
+        helper(root -> left, vector<int>(inorder.begin(), inorder.begin() + mid), vector<int>(postorder.begin(), postorder.begin() + mid));
+        helper(root -> right, vector<int>(inorder.begin() + mid + 1, inorder.end()), vector<int>(postorder.begin() + mid, postorder.end()));
+    }
+};
+上面这个是我写出来的第一个版本，有几个非常严重的问题，
+１．传入helper函数的TreeNode指针在helper函数中发生了值改变，但是这种改变不会传出helper函数．所以可以用双指针代替．
+２．题目上没有说给出的inorder 和 postorder是sorted的，所以不能用binary search来找root_value．
+３．而且helper function 最后的子vector的取法也很容易出错，很复杂．vector中取子vector 可以用两个index标记subvector的begin和end值．
+vector 中取子 vector 的一些trick:
+vector<int> a = {1, 2, 3, 4, 5};
+vector<int> b(a.begin(), a.begin() + 3); // 这样取的话后面加的数就表明了新的vector的长度，只取三个元素, 结果是{1, 2, 3}
+auto c = find(a.begin(), a.end(), 3);
+vector<int> b(a.begin(), c);// 这样写的话会取iterator c之前的东西放到b中，相当于前闭后开区间［a.begin(), c), 结果是{1, 2}
+
+综合上面的三个问题，还有参考了别人的答案以后得到如下解法：
+class Solution {
+public:
+    TreeNode* buildTree(vector<int> & inorder, vector<int> & postorder)
+    {
+        if(inorder.empty() || postorder.empty())
+            return nullptr;
+        return helper(inorder, postorder);
+    }
+private:
+    TreeNode* helper(const vector<int> & inorder, const vector<int> & postorder)
+    {
+        if(inorder.empty() || postorder.empty())
+            return nullptr;
+        TreeNode* node = new TreeNode(postorder.back());
+        auto mid = find(inorder.begin(), inorder.end(), postorder.back());
+        int dist = mid - inorder.begin();
+        node -> left = helper(vector<int>(inorder.begin(), mid), vector<int>(postorder.begin(), postorder.begin() + dist));
+        node -> right = helper(vector<int>(mid+1, inorder.end()), vector<int>(postorder.begin() + dist, postorder.end() - 1));
+        return node;
+    }
+};
+上面的这个helper函数中我们在递归调用的时候吧rvalue当做argument传入函数中，所以要用const reference作为argument的类型．
+
+```
+
+###547. Friend Circle
+```c++
+There are N students in a class. Some of them are friends, while some are not. Their friendship is transitive in nature. For example, if A is a direct friend of B, and B is a direct friend of C, then A is an indirect friend of C. And we defined a friend circle is a group of students who are direct or indirect friends.
+
+Given a N*N matrix M representing the friend relationship between students in the class. If M[i][j] = 1, then the ith and jth students are direct friends with each other, otherwise not. And you have to output the total number of friend circles among all the students.
+
+Example 1:
+Input: 
+[[1,1,0],
+ [1,1,0],
+ [0,0,1]]
+Output: 2
+Explanation:The 0th and 1st students are direct friends, so they are in a friend circle. 
+The 2nd student himself is in a friend circle. So return 2.
+Example 2:
+Input: 
+[[1,1,0],
+ [1,1,1],
+ [0,1,1]]
+Output: 1
+Explanation:The 0th and 1st students are direct friends, the 1st and 2nd students are direct friends, 
+so the 0th and 2nd students are indirect friends. All of them are in the same friend circle, so return 1.
+Note:
+N is in range [1,200].
+M[i][i] = 1 for all students.
+If M[i][j] = 1, then M[j][i] = 1.
+
+
+这道题中的relationship是一个graph的典型例子，对一个一个图找到它的所有friend可以想象成一个DFS的问题。
+我们可以对matrix中的每一行进行遍历，每找到一个direct friendship就进而访问他的所有的possible friendship.
+直到把能访问到的friendship都访问一遍，就找到了一个friend circle.
+同时需要用一个vector来记录哪个人没有被访问过，遍历到之前没访问过的人的时候就把friend circle的number 加一，然后访问他的所有可能friendship.
+到最后就能得到friend circle 的总数。
+
+class Solution {
+public:
+	// function to visit line i in M
+    void visit(vector<vector<int>> & M, unordered_set<int> & visited, int row)
+    {
+    	if(row == M.size())
+        	return;
+    	for(int i = 0; i < M[row].size(); i++)
+        {
+        	if(M[row][i] == 1)
+         	{
+            	if(visited.find(i) == visited.end())
+            	{
+                	visited.insert(i); // visit i
+                	visit(M, visited, i);
+                }
+            }
+        }
+    }
+    int findCircleNum(vector<vector<int>>& M) {
+        // 1. corner cases
+        if(M.empty() || M[0].empty())
+        	return 0;
+        // 2. find friend circle
+        unordered_set<int> visited;
+        int circle_num = 0;
+        for(int i = 0; i < M.size(); i++)
+        {
+        	// if this person is not visited before
+        	if(visited.find(i) == visited.end())
+            {
+                circle_num ++;
+                visited.insert(i); // visit i
+                visit(M, visited, i);
+            }
+        }
+        return circle_num;
+    }
+};
+```
+
+### 494. Target Sum
+```c++
+You are given a list of non-negative integers, a1, a2, ..., an, and a target, S. Now you have 2 symbols + and -. For each integer, you should choose one from + and - as its new symbol.
+
+Find out how many ways to assign symbols to make sum of integers equal to target S.
+
+Example 1:
+Input: nums is [1, 1, 1, 1, 1], S is 3. 
+Output: 5
+Explanation: 
+
+-1+1+1+1+1 = 3
++1-1+1+1+1 = 3
++1+1-1+1+1 = 3
++1+1+1-1+1 = 3
++1+1+1+1-1 = 3
+
+There are 5 ways to assign symbols to make the sum of nums be target 3.
+Note:
+The length of the given array is positive and will not exceed 20.
+The sum of elements in the given array will not exceed 1000.
+Your output answer is guaranteed to be fitted in a 32-bit integer.
+
+这道题很容易想到下面的这个解法，用DFS遍历所有可能的情况。
+但是仔细思考一下的话发现这个解法是exponential time complexity，因为每个数字都可能取两种符号，所以总共的可能性就是2^n
+看了别人的答案了以后确实有更快的解法
+class Solution {
+public:
+    void dfs(vector<int> nums, int S, int idx, int sum, int & combo_num)
+    {
+        // corner case
+        if(idx == nums.size())
+        {    
+            if(sum == S)
+                combo_num ++;
+            return;
+        }
+
+        dfs(nums, S, idx + 1, sum + nums[idx], combo_num);
+        dfs(nums, S, idx + 1, sum - nums[idx], combo_num);
+    }
+    int findTargetSumWays(vector<int>& nums, int S) {
+        int combo_num = 0;
+        dfs(nums, S, 0, 0, combo_num);
+        return combo_num;
+    }
+};
+
+optimized solution:
+Memorization:
+如果我们能画出这道题的graph的结构的话，对我们分析问题和分析时间复杂度很有帮助。
+比如我们考虑nums = [1, 2, 3, 4]的例子：
+					1					-1
+				/		\			/		\
+			   2		-2		   2		-2	
+            /	 \     /  \ 	 /  \      /   \
+           3     -3   3   -3    3   -3    3     -3
+		  / \    / \ /\   / \  / \  / \  / \    / \
+         4  -4  4 -44 -4 4 -4 4  -4 4 -4 4 -4  4   -4
+有了上面这张图我们就可以看出来这道题上面的DFS的方法的时间复杂度是O(2^N)， 因为每个node都会二分，和斐波那契数列的复杂度分析一样。
+和斐波那契数列一样这里也会存在重复计算的redundency。上面的图中，直到第四层才会出现一次重复的计算。所以可以像斐波那契数列一样用memorization的方法记录某些node的运算结果。
+这里要记录运算结果的话，我们希望每次能很快的find到可以直接拿来用的运算结果，所以用unordered_map来保存运算结果。而每个运算结果我们需要用两个数来表征，i 表示计算结果是用index i 之后的数计算出来的，j 表示这个运算结果是和为j的结果。
+综合这两个考虑我们用vector<unordered_map<int, int>> 来保存所有的结果。vector的第i个位置说明用index i之后的元素，map的key表示和为几，map的value表示有几种方法使得和为key
+class Solution {
+public:
+	int findTargetSumWays(vector<int>& nums, int S) {
+		vector<unordered_map<int, int>> sum_map(nums.size());
+        return find(0, nums, S, sum_map); // p指定我们用index p之后的数
+    }
+    // like febonacci sequence, build entire tree with bottom up method
+    int find(int p, vector<int>& nums, int target, vector<unordered_map<int, int>>& sum_map)
+    {
+    	if(p == nums.size())
+        	return sum == 0;
+        auto it = mem[p].find(sum);
+        if(it != mem[p].end()) return it -> second;
+        return mem[p][sum] = find(p+1, nums, sum + nums[p], mem) + find(p+1, nums, sums-nums[p], mem);
+    }
+}
+
+
+DP solution:
+这道题还可以利用DP 来bottom - up 的构建这个graph
+构建一个DP vector，它的第i个位置保存着一个unordered map, map中key为j的地方保存着，用[0 : i]的subsequence有多少种方法使得他们组合起来等于j
+状态转移方程：dp[i + 1][k + nums[i] * sgn] += dp[i][k]
+
+上式中，sgn取值±1，k为dp[i]中保存的所有状态；初始令dp[0][0] = 1
+
+利用滚动数组，可以将空间复杂度优化到O(n)，n为可能的运算结果的个数
+
+    int findTargetSumWays(vector<int>& nums, int S) {
+        int n = nums.size();
+        vector<unordered_map<int,int>> dp(n+1);
+        // base case, when sum == 0, no number needed
+        dp[0][0]=1;
+        for(int i=0;i<n;i++)
+            for(auto &p:dp[i]) {
+                dp[i+1][p.first+nums[i]] += p.second; 
+                dp[i+1][p.first-nums[i]] += p.second;
+            }
+        return dp[n][S];
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+```
